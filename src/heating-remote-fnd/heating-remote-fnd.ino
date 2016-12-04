@@ -14,7 +14,7 @@
 #define ONE_WIRE_BUS 2
 #define DISP_DIO 3
 #define DISP_CLK 4
-#define HEATING_LED 13
+#define TX_RX_LED 13
 #define JOYSTICK_X A0
 #define JOYSTICK_Y A1
 #define JOYSTICK_PUSH A2
@@ -69,7 +69,7 @@
 #define CMD_IS_ALIVE '?'
 #define CMD_RAW '$'
 #define CMD_FOOTER ']'
-#define CMD_TIMEOUT 500
+#define CMD_TIMEOUT 1000
 
 /*
  * J O Y S T I C K
@@ -153,7 +153,7 @@ void setup() {
     unsigned long cmdTimeout = 0;
 
     pinMode(JOYSTICK_PUSH, INPUT_PULLUP);
-    pinMode(HEATING_LED, OUTPUT);
+    pinMode(TX_RX_LED, OUTPUT);
     display.setBrightness(8);
     displayPrintMsg(MSG_INIT);
     sensor.begin();
@@ -541,6 +541,7 @@ void displayFadeOff(unsigned char b) {
 }
 
 void sendCommand(char cmd, unsigned char val) {
+    digitalWrite(TX_RX_LED, HIGH);
     Serial.print(CMD_HEADER);
     switch (cmd) {
       case CMD_HELLO:
@@ -555,17 +556,20 @@ void sendCommand(char cmd, unsigned char val) {
         break;
     }
     Serial.println(CMD_FOOTER);
+    digitalWrite(TX_RX_LED, LOW);
 }
 
 char readCommand() {
     char ret = 0;
 
     if (Serial.available() > 2) {
+        digitalWrite(TX_RX_LED, HIGH);
         if (Serial.read() == CMD_HEADER) {
             ret = Serial.read();
             if (Serial.read() != CMD_FOOTER) ret = 0;
         }
     }
+    digitalWrite(TX_RX_LED, LOW);
     return ret;
 }
 
