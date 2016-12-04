@@ -8,6 +8,7 @@
  */
 #define RELAY_1 10
 #define RELAY_2 11
+#define VALID 13
 
 /*
  * C O M M
@@ -18,7 +19,7 @@
 #define CMD_RAW '$'
 #define CMD_FOOTER ']'
 #define CMD_TIMEOUT 1000
-#define MAX_PERIOD (1000 + 1)
+#define MAX_PERIOD 1000UL
 
 /*
  * P W M
@@ -47,35 +48,44 @@ void setup() {
     Serial.begin(9600);
     pinMode(RELAY_1, OUTPUT);
     pinMode(RELAY_2, OUTPUT);
+    pinMode(VALID, OUTPUT);
     MsTimer2::set(PWM_STEP, slowPWM);
     MsTimer2::start();
 }
 
 void loop() {
+    static boolean received = false;
     static boolean waiting = false;
     unsigned char cmd = 0;
+    unsigned long maxPeriod = (MAX_PERIOD * 1000);
     static unsigned long timeout = 0;
 
     cmd = readCommand();
-    if (cmd == CMD_IS_ALIVE) {
+    if (cmd == CMD_RAW) {
+        received = true;
+        Serial.println(rawData);
+        timeout = millis();
+    }
+    else if (cmd == CMD_IS_ALIVE) {
         sendCommand(CMD_HELLO);
         timeout = millis();
     }
-    else if (cmd == CMD_RAW) timeout = millis();
     else if ((cmd == CMD_HELLO) && (waiting)) {
         timeout = millis();
         waiting = false;
     }
 
-    if (millis() - timeout > (unsigned long)(MAX_PERIOD * 1000)) {
+    if ((millis() - timeout) > maxPeriod) {
         waiting = false;
         dataValid = false;
     }
-    else if (millis() - timeout > (unsigned long)((MAX_PERIOD * 1000) - CMD_TIMEOUT)) {
-        if (!waiting) sendCommand(CMD_IS_ALIVE);
+    else if ((millis() - timeout) > (unsigned long)(maxPeriod - CMD_TIMEOUT)) {
+        if (!waiting) {
+            sendCommand(CMD_IS_ALIVE);
+        }
         waiting = true;
     }
-    else dataValid = true;
+    else if (received) dataValid = true;
 }
 
 void slowPWM() {
@@ -85,6 +95,7 @@ void slowPWM() {
     static unsigned long t = 0;
 
     if (dataValid) {
+        digitalWrite(VALID, LOW);
         if (rawData == 255) {
             digitalWrite(RELAY_1, HIGH);
             digitalWrite(RELAY_2, HIGH);
@@ -112,6 +123,7 @@ void slowPWM() {
         else digitalWrite(pin, HIGH);
     }
     else {
+        digitalWrite(VALID, HIGH);
         digitalWrite(RELAY_1, LOW);
         digitalWrite(RELAY_2, LOW);
         currentStep = 1;
