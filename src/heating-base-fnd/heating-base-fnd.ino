@@ -89,6 +89,7 @@ void loop() {
 }
 
 void slowPWM() {
+    boolean runSoftPWM = false;
     static unsigned char pin = 0;
     static unsigned char val = 0;
     static unsigned char currentStep = 1;
@@ -97,30 +98,36 @@ void slowPWM() {
     if (dataValid) {
         digitalWrite(VALID, LOW);
         if (rawData == 255) {
+            runSoftPWM = false;
             digitalWrite(RELAY_1, HIGH);
             digitalWrite(RELAY_2, HIGH);
         }
         else if (rawData > 126) {
+            runSoftPWM = true;
             digitalWrite(RELAY_1, HIGH);
             val = (rawData - 127);
             pin = RELAY_2;
         }
         else if (rawData) {
+            runSoftPWM = true;
+            digitalWrite(RELAY_2, LOW);
             val = rawData;
             pin = RELAY_1;
         }
         else {
+            runSoftPWM = false;
             digitalWrite(RELAY_1, LOW);
             digitalWrite(RELAY_2, LOW);
         }
-    
-        if ((millis() - t) > (unsigned long)PWM_STEP) {
-            t = millis();
-            currentStep++;
-            if (currentStep > PWM_MAX_VALUE) currentStep = 1;
+        if (runSoftPWM) {
+            if ((millis() - t) > (unsigned long)PWM_STEP) {
+                t = millis();
+                currentStep++;
+                if (currentStep > PWM_MAX_VALUE) currentStep = 1;
+            }
+            if (val < currentStep) digitalWrite(pin, LOW);
+            else digitalWrite(pin, HIGH);
         }
-        if (val < currentStep) digitalWrite(pin, LOW);
-        else digitalWrite(pin, HIGH);
     }
     else {
         digitalWrite(VALID, HIGH);
