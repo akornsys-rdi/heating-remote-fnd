@@ -45,7 +45,7 @@ boolean dataValid= false;
 unsigned char rawData = 0;
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(57600);
     pinMode(RELAY_1, OUTPUT);
     pinMode(RELAY_2, OUTPUT);
     pinMode(VALID, OUTPUT);

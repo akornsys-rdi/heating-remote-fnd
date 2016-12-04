@@ -164,7 +164,7 @@ void setup() {
         display.showNumberDec(1,false,1,3);
         while(1);
     }
-    Serial.begin(9600);
+    Serial.begin(57600);
     cmdTimeout = millis();
     sendCommand(CMD_IS_ALIVE, 0);
     while ((Serial.available() <= 2) && (millis() < (cmdTimeout + CMD_TIMEOUT)));
